@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Smart Timetable</title>
+
+<style>
+body{font-family:Arial;background:#f4f6f9;padding:20px}
+.card{background:white;padding:15px;margin:10px;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.2)}
+input,select{padding:8px;margin:5px}
+button{padding:8px;background:#4CAF50;color:white;border:none;border-radius:5px}
+table{width:100%;border-collapse:collapse;margin-top:15px}
+th,td{border:1px solid #ccc;padding:8px;text-align:center}
+th{background:#4CAF50;color:white}
+</style>
+
+</head>
+<body>
+
+<h2>📅 Smart Timetable System</h2>
+
+<div class="card">
+<h3>Login</h3>
+<input id="u" placeholder="Username">
+<input id="p" placeholder="Password">
+<button onclick="login()">Login</button>
+</div>
+
+<div class="card">
+<h3>Add Data</h3>
+<input id="faculty" placeholder="Faculty">
+<button onclick="addFaculty()">Add</button><br>
+
+<input id="subject" placeholder="Subject">
+<button onclick="addSubject()">Add</button><br>
+
+<input id="room" placeholder="Room">
+<button onclick="addRoom()">Add</button><br>
+
+<input id="time" placeholder="Time (9-10)">
+<button onclick="addTime()">Add Time</button>
+</div>
+
+<div class="card">
+<h3>Load Options</h3>
+<button onclick="loadOptions()">Load Dropdown</button>
+
+<select id="subjectSelect"></select>
+<select id="facultySelect"></select>
+<select id="roomSelect"></select>
+<select id="timeSelect"></select>
+</div>
+
+<div class="card">
+<h3>Create Timetable Entry</h3>
+
+<input id="day" placeholder="Day (Monday)">
+<button onclick="addEntry()">Add Entry</button>
+<button onclick="showManual()">Show Timetable</button>
+
+<div id="manual"></div>
+</div>
+
+<div class="card">
+<h3>Auto Generate</h3>
+<button onclick="generate()">Generate</button>
+<div id="auto"></div>
+</div>
+
+<div class="card">
+<h3>Notification</h3>
+<input id="nsub" placeholder="Subject">
+<input id="ntime" placeholder="Time">
+<button onclick="notify()">Send</button>
+</div>
+
+<script>
+
+function login(){
+fetch(`/login?username=${u.value}&password=${p.value}`)
+.then(r=>r.json()).then(d=>alert(d.message))
+}
+
+function addFaculty(){fetch(`/add-faculty?name=${faculty.value}`).then(()=>alert("Added"))}
+function addSubject(){fetch(`/add-subject?name=${subject.value}`).then(()=>alert("Added"))}
+function addRoom(){fetch(`/add-room?name=${room.value}`).then(()=>alert("Added"))}
+function addTime(){fetch(`/add-time?time=${time.value}`).then(()=>alert("Time Added"))}
+
+function loadOptions(){
+fetch('/get-options')
+.then(r=>r.json())
+.then(d=>{
+subjectSelect.innerHTML=""
+facultySelect.innerHTML=""
+roomSelect.innerHTML=""
+timeSelect.innerHTML=""
+
+d.subjects.forEach(s=>subjectSelect.innerHTML+=`<option>${s}</option>`)
+d.faculty.forEach(f=>facultySelect.innerHTML+=`<option>${f}</option>`)
+d.rooms.forEach(r=>roomSelect.innerHTML+=`<option>${r}</option>`)
+d.times.forEach(t=>timeSelect.innerHTML+=`<option>${t}</option>`)
+})
+}
+
+function addEntry(){
+fetch(`/add-entry?day=${day.value}&time=${timeSelect.value}&subject=${subjectSelect.value}&faculty=${facultySelect.value}&room=${roomSelect.value}`)
+.then(r=>r.json())
+.then(d=>alert(d.message))
+}
+
+function showManual(){
+fetch('/get-timetable')
+.then(r=>r.json())
+.then(d=>{
+let html=`<table><tr><th>Day</th><th>Time</th><th>Subject</th><th>Faculty</th><th>Room</th></tr>`
+d.timetable.forEach(t=>{
+html+=`<tr><td>${t.day}</td><td>${t.time}</td><td>${t.subject}</td><td>${t.faculty}</td><td>${t.room}</td></tr>`
+})
+html+="</table>"
+manual.innerHTML=html
+})
+}
+
+function generate(){
+fetch('/generate-timetable')
+.then(r=>r.json())
+.then(d=>{
+alert(d.notification)
+let html=`<table><tr><th>Day</th><th>Time</th><th>Subject</th><th>Faculty</th><th>Room</th></tr>`
+d.timetable.forEach(t=>{
+html+=`<tr><td>${t.day}</td><td>${t.time}</td><td>${t.subject}</td><td>${t.faculty}</td><td>${t.room}</td></tr>`
+})
+html+="</table>"
+document.getElementById("auto").innerHTML=html
+
+})
+}
+
+function notify(){
+fetch(`/send-notification?subject=${nsub.value}&time=${ntime.value}`)
+.then(r=>r.json())
+.then(d=>alert(d.notification))
+}
+
+</script>
+
+</body>
+</html>
