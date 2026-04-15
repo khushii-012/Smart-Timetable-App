@@ -4,14 +4,24 @@ from firebase_admin import credentials, firestore
 import pandas as pd
 import random
 import datetime
+import os
+import json
 
 # ---------------- FIREBASE INIT ---------------- #
+# ---------------- FIREBASE INIT ---------------- #
 if not firebase_admin._apps:
-    cred = credentials.Certificate("firebase_key.json")
+
+    raw = os.environ.get("FIREBASE_CRED")
+
+    if not raw:
+        raise Exception("FIREBASE_CRED not found in environment variables")
+
+    firebase_config = json.loads(raw)
+
+    cred = credentials.Certificate(firebase_config)
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
-
 # ---------------- TITLE ---------------- #
 st.title("📅 Smart Auto Timetable Generator")
 
