@@ -51,7 +51,7 @@ Smart Auto Timetable Generator is a web-based application that automatically gen
 ## ⚙️ Installation (Run Locally)
 
 ```bash
-git clone https://github.com/your-username/Smart-Timetable-App.git
+git clone https://github.com/khushii-012/Smart-Timetable-App.git
 cd Smart-Timetable-App
 pip install -r requirements.txt
 streamlit run app.py
