@@ -35,8 +35,7 @@ Smart Auto Timetable Generator is a web-based application that automatically gen
 
 ## 🌐 Live Demo
 
-👉 https://your-render-link.onrender.com
-
+👉 https://smart-timetable-app-hl0x.onrender.com
 ---
 
 ## ⚙️ How It Works
