@@ -23,9 +23,7 @@ Smart Auto Timetable Generator is a web-based application that automatically gen
 * ☁️ Firebase integration for real-time data
 
 ---
-Markdown
 
------
 
 ## 🛠 Tech Stack
 
