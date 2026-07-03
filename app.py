@@ -9,28 +9,318 @@ import json
 import requests
 import threading
 import time
+from dotenv import load_dotenv
+
+# Load env variables from .env if present
+load_dotenv()
 
 # ════════════════════════════════════════════
 #  FIREBASE INIT
 # ════════════════════════════════════════════
 if not firebase_admin._apps:
     raw = os.environ.get("FIREBASE_CRED")
-    if not raw:
-        raise Exception("FIREBASE_CRED not found in environment variables")
-    firebase_config = json.loads(raw)
-    cred = credentials.Certificate(firebase_config)
+    if raw:
+        firebase_config = json.loads(raw)
+        cred = credentials.Certificate(firebase_config)
+    elif os.path.exists("firebase_key.json"):
+        cred = credentials.Certificate("firebase_key.json")
+    else:
+        raise Exception("Neither FIREBASE_CRED env var nor firebase_key.json file found.")
     firebase_admin.initialize_app(cred)
+
 
 db = firestore.client()
 
 # ════════════════════════════════════════════
-#  PAGE CONFIG
+#  PAGE CONFIG & CUSTOM STYLING
 # ════════════════════════════════════════════
 st.set_page_config(
     page_title="Smart Timetable",
     page_icon="📅",
     layout="wide"
 )
+
+def inject_custom_css():
+    st.markdown("""
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* Global styling and gradients */
+        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+            background-color: #0b0f19 !important;
+            background-image: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 45%),
+                              radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.12) 0%, transparent 45%) !important;
+            color: #f1f5f9 !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+        
+        /* Custom typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Outfit', sans-serif !important;
+            font-weight: 700 !important;
+            color: #ffffff !important;
+            letter-spacing: -0.5px;
+        }
+        
+        /* Modern Title Styling */
+        h1 {
+            background: linear-gradient(135deg, #a5b4fc, #e9d5ff) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            font-size: 2.2rem !important;
+            font-weight: 800 !important;
+            margin-bottom: 0.5rem !important;
+        }
+        
+        /* Sidebar layout & glassmorphism */
+        [data-testid="stSidebar"] {
+            background-color: rgba(15, 23, 42, 0.95) !important;
+            backdrop-filter: blur(12px) !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+            color: #cbd5e1 !important;
+        }
+        
+        /* Styled Input Controls */
+        div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"] {
+            background-color: rgba(30, 41, 59, 0.6) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 10px !important;
+            transition: all 0.3s ease !important;
+            color: #ffffff !important;
+        }
+        div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within, div[data-baseweb="textarea"]:focus-within {
+            border-color: #818cf8 !important;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
+        }
+        
+        /* Selectboxes text compatibility */
+        div[data-baseweb="select"] span {
+            color: #ffffff !important;
+        }
+        
+        /* Streamlit standard Tabs styling */
+        div[data-testid="stTabBar"] {
+            background-color: rgba(15, 23, 42, 0.5) !important;
+            border-radius: 10px !important;
+            padding: 5px !important;
+            border: 1px solid rgba(255, 255, 255, 0.06) !important;
+            gap: 6px !important;
+        }
+        button[data-baseweb="tab"] {
+            border-radius: 8px !important;
+            color: #94a3b8 !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-weight: 600 !important;
+            background-color: transparent !important;
+            transition: all 0.2s ease !important;
+            border-bottom: none !important;
+            padding: 8px 16px !important;
+        }
+        button[data-baseweb="tab"]:hover {
+            color: #cbd5e1 !important;
+            background-color: rgba(255, 255, 255, 0.03) !important;
+        }
+        button[data-baseweb="tab"][aria-selected="true"] {
+            background-color: rgba(99, 102, 241, 0.18) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
+            border: 1px solid rgba(99, 102, 241, 0.25) !important;
+        }
+        
+        /* Action buttons styles */
+        div.stButton > button {
+            background: linear-gradient(135deg, #6366f1, #a855f7) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 10px !important;
+            padding: 10px 24px !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-weight: 600 !important;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25) !important;
+            transition: all 0.3s ease !important;
+            width: 100% !important;
+        }
+        div.stButton > button:hover {
+            background: linear-gradient(135deg, #4f46e5, #9333ea) !important;
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45) !important;
+            transform: translateY(-2px) !important;
+            color: white !important;
+        }
+        div.stButton > button:active {
+            transform: translateY(0) !important;
+        }
+        
+        /* Divider overrides */
+        hr {
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            margin: 1.5rem 0 !important;
+        }
+        
+        /* Styled Alert/Notification boxes */
+        div[data-testid="stNotification"] {
+            background-color: rgba(30, 41, 59, 0.5) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 10px !important;
+            color: #e2e8f0 !important;
+        }
+        
+        /* Custom card wrapper for Streamlit layout */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(8px);
+        }
+        
+        /* Hide native decoration and bars */
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+    </style>
+    """, unsafe_allow_html=True)
+
+# Helper function to generate stats/KPI cards
+def render_kpi_card(title, value, icon, gradient="linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15))"):
+    st.markdown(f"""
+    <div style="background: {gradient}; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(0,0,0,0.15); margin-bottom: 15px; border-left: 4px solid #6366f1;">
+        <div>
+            <div style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.75px; margin-bottom: 4px;">{title}</div>
+            <div style="font-family: 'Outfit', sans-serif; font-size: 1.8rem; font-weight: 700; color: #ffffff; line-height: 1.1;">{value}</div>
+        </div>
+        <div style="font-size: 2.2rem; filter: drop-shadow(0 0 8px rgba(255,255,255,0.1));">{icon}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Helper to render notification alert feed items
+def render_announcement_card(title, body, sender, timestamp, notif_type):
+    icons = {
+        "announcement": "📢",
+        "substitution": "🔄",
+        "teacher_alert": "⚠️"
+    }
+    icon = icons.get(notif_type, "🔔")
+    
+    border_colors = {
+        "announcement": "#3b82f6",
+        "substitution": "#10b981",
+        "teacher_alert": "#f59e0b"
+    }
+    b_color = border_colors.get(notif_type, "#6366f1")
+    
+    # Format time
+    try:
+        dt = datetime.datetime.fromisoformat(timestamp)
+        time_str = dt.strftime("%b %d, %H:%M")
+    except Exception:
+        time_str = timestamp[:16]
+        
+    st.markdown(f"""
+    <div style="background: rgba(30, 41, 59, 0.35); border: 1px solid rgba(255, 255, 255, 0.06); border-left: 4px solid {b_color}; border-radius: 10px; padding: 16px; margin-bottom: 12px; display: flex; gap: 14px; align-items: flex-start; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+        <div style="font-size: 1.5rem; background: rgba(255,255,255,0.05); width: 42px; height: 42px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.05);">{icon}</div>
+        <div style="flex-grow: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 6px; gap: 8px;">
+                <span style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1rem; color: #ffffff;">{title}</span>
+                <span style="font-size: 0.72rem; color: #64748b; font-weight: 500;">{time_str}</span>
+            </div>
+            <p style="margin: 0 0 6px 0; color: #cbd5e1; font-size: 0.88rem; line-height: 1.45; font-family: 'Inter', sans-serif;">{body}</p>
+            <div style="font-size: 0.72rem; color: #818cf8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.25px;">👤 {sender}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Helper function to generate custom colored HTML timetable grid
+def get_custom_timetable_html(tt):
+    if not tt:
+        return "<div class='glass-card' style='text-align: center; color: #94a3b8;'>No timetable generated yet.</div>"
+    
+    # Elegant subject color mapping
+    subject_colors = [
+        "linear-gradient(135deg, #e0f2fe, #bae6fd)", # sky
+        "linear-gradient(135deg, #f0fdf4, #dcfce7)", # green
+        "linear-gradient(135deg, #faf5ff, #f3e8ff)", # purple
+        "linear-gradient(135deg, #fef2f2, #fee2e2)", # red
+        "linear-gradient(135deg, #fffbeb, #fef3c7)", # amber
+        "linear-gradient(135deg, #fdf4ff, #fae8ff)", # fuchsia
+        "linear-gradient(135deg, #f0fdfa, #ccfbf1)", # teal
+        "linear-gradient(135deg, #eff6ff, #dbeafe)"  # blue
+    ]
+    
+    unique_subs = set()
+    for day in DAYS:
+        if day in tt:
+            for t in TIMES:
+                val = tt[day].get(t, "")
+                if val and val not in ["☕ BREAK", "🍴 LUNCH", "BREAK", "LUNCH"]:
+                    # Extract subject name
+                    sub_name = val.split(" (")[0]
+                    unique_subs.add(sub_name)
+                    
+    sub_color_map = {}
+    for idx, sub in enumerate(sorted(list(unique_subs))):
+        sub_color_map[sub] = subject_colors[idx % len(subject_colors)]
+        
+    html = """
+    <div style="width: 100%; overflow-x: auto; border-radius: 12px; background: rgba(30, 41, 59, 0.25); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.06); padding: 12px; box-sizing: border-box; margin-bottom: 25px;">
+        <table style="width: 100%; border-collapse: separate; border-spacing: 8px; font-family: 'Outfit', sans-serif; color: #ffffff; min-width: 1000px;">
+            <thead>
+                <tr>
+                    <th style="background: rgba(15, 23, 42, 0.6); border-radius: 8px; padding: 14px; font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.75px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05); color: #94a3b8; width: 100px;">Day</th>
+    """
+    
+    time_display = {
+        "9:30": "09:30 AM",
+        "10:30": "10:30 AM",
+        "LUNCH": "🍱 LUNCH",
+        "12:00": "12:00 PM",
+        "13:00": "01:00 PM",
+        "14:00": "02:00 PM",
+        "BREAK": "☕ BREAK",
+        "14:30": "02:30 PM",
+        "15:30": "03:30 PM"
+    }
+    
+    for t in TIMES:
+        html += f'<th style="background: rgba(15, 23, 42, 0.6); border-radius: 8px; padding: 14px; font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.75px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05); color: #94a3b8;">{time_display.get(t, t)}</th>'
+    html += "</tr></thead><tbody>"
+    
+    for day in DAYS:
+        html += f'<tr><td style="background: linear-gradient(135deg, #1e293b, #0f172a); border-radius: 8px; padding: 14px; font-weight: 700; text-align: center; vertical-align: middle; font-size: 0.88rem; border: 1px solid rgba(255, 255, 255, 0.08); color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">{day[:3]}</td>'
+        day_slots = tt.get(day, {})
+        for t in TIMES:
+            val = day_slots.get(t, "")
+            if not val or val == "FREE" or val == "Free period":
+                html += '<td style="background: rgba(255, 255, 255, 0.01); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.03); padding: 10px; text-align: center; vertical-align: middle; min-width: 110px; color: rgba(255,255,255,0.15); font-size: 0.85rem;">-</td>'
+            elif "BREAK" in val or "☕" in val:
+                html += '<td style="background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px dashed rgba(255, 255, 255, 0.1); padding: 10px; text-align: center; vertical-align: middle; min-width: 110px; color: #64748b; font-style: italic; font-size: 0.78rem; font-weight: 600;">☕ BREAK</td>'
+            elif "LUNCH" in val or "🍴" in val:
+                html += '<td style="background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px dashed rgba(255, 255, 255, 0.1); padding: 10px; text-align: center; vertical-align: middle; min-width: 110px; color: #94a3b8; font-style: italic; font-size: 0.78rem; font-weight: 600;">🍱 LUNCH</td>'
+            else:
+                # E.g.: DBMS (Mrunali Mam, Rm F-35)
+                sub_name = val.split(" (")[0]
+                fac_room = val.split(" (")[1].replace(")", "") if " (" in val else ""
+                fac = fac_room.split(", Rm ")[0] if ", Rm " in fac_room else fac_room
+                room = fac_room.split(", Rm ")[1] if ", Rm " in fac_room else ""
+                
+                color = sub_color_map.get(sub_name, "linear-gradient(135deg, #1e293b, #0f172a)")
+                
+                html += f"""
+                <td style="background: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05); padding: 8px; text-align: center; vertical-align: middle; min-width: 110px;">
+                    <div style="background: {color}; border-radius: 6px; padding: 8px 6px; color: #0f172a; font-weight: 700; box-shadow: 0 4px 10px rgba(0,0,0,0.12); display: flex; flex-direction: column; gap: 3px; height: 100%; justify-content: center; transition: all 0.3s ease;">
+                        <div style="font-size: 0.85rem; line-height: 1.15; font-family: 'Outfit', sans-serif;">{sub_name}</div>
+                        <div style="font-size: 0.7rem; opacity: 0.8; font-weight: 500; font-family: 'Inter', sans-serif;">👤 {fac}</div>
+                        {f'<div style="font-size: 0.7rem; opacity: 0.8; font-weight: 500; font-family: \'Inter\', sans-serif;">📍 Rm {room}</div>' if room else ''}
+                    </div>
+                </td>
+                """
+        html += "</tr>"
+        
+    html += "</tbody></table></div>"
+    return html
+
 
 # ════════════════════════════════════════════
 #  SESSION STATE DEFAULTS
@@ -283,17 +573,24 @@ def can_edit_today(target_day: str) -> bool:
 #  UI — LOGIN PAGE
 # ════════════════════════════════════════════
 def render_login():
-    st.title("📅 Smart Timetable Generator")
-    st.markdown("---")
+    st.markdown("""
+    <div style="text-align: center; padding: 30px 0 15px 0;">
+        <span style="font-size: 3.5rem; filter: drop-shadow(0 0 12px rgba(99,102,241,0.3));">📅</span>
+        <h1 style="margin-top: 15px; font-size: 2.6rem; font-weight: 800; background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: 'Outfit', sans-serif;">Smart Timetable</h1>
+        <p style="color: #94a3b8; font-size: 1.05rem; margin-top: -5px; font-family: 'Inter', sans-serif;">Conflict-free scheduling, live updates, and instant alerts.</p>
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown("<hr style='margin: 0 0 25px 0 !important;'>", unsafe_allow_html=True)
 
-    tab_login, tab_register = st.tabs(["🔐 Login", "📝 Register"])
+    tab_login, tab_register = st.tabs(["🔐 Login Portal", "📝 Register Account"])
 
     with tab_login:
-        st.subheader("Login to your account")
-        email    = st.text_input("Email", key="li_email")
+        st.subheader("Sign In")
+        email    = st.text_input("Email Address", key="li_email")
         password = st.text_input("Password", type="password", key="li_pass")
 
-        if st.button("Login", use_container_width=True):
+        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+        if st.button("Sign In", use_container_width=True):
             if not FIREBASE_WEB_API_KEY:
                 st.error("FIREBASE_WEB_API_KEY env var not set on Render.")
                 return
@@ -314,14 +611,19 @@ def render_login():
                 st.error(f"Login failed: {e}")
 
     with tab_register:
-        st.subheader("Create a new account")
-        st.info("⚠️ Registration is open for testing. In production, restrict role selection to Admin only.")
+        st.subheader("Register Profile")
+        st.markdown("""
+        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 8px; padding: 12px; margin-bottom: 20px; color: #fcd34d; font-size: 0.85rem; font-family: 'Inter', sans-serif; line-height: 1.45;">
+            ⚠️ <strong>Testing Environment:</strong> Registration is currently open for testing. In active production, role management should be restricted to administrators.
+        </div>
+        """, unsafe_allow_html=True)
         r_name  = st.text_input("Full Name",  key="reg_name")
-        r_email = st.text_input("Email",      key="reg_email")
+        r_email = st.text_input("Email Address",      key="reg_email")
         r_pass  = st.text_input("Password",   type="password", key="reg_pass")
-        r_role  = st.selectbox("Role", ["student", "teacher", "admin"], key="reg_role")
+        r_role  = st.selectbox("Select Role", ["student", "teacher", "admin"], key="reg_role")
 
-        if st.button("Register", use_container_width=True):
+        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+        if st.button("Register Account", use_container_width=True):
             if not FIREBASE_WEB_API_KEY:
                 st.error("FIREBASE_WEB_API_KEY env var not set on Render.")
                 return
@@ -360,13 +662,25 @@ def render_admin():
 
     st.title(f"🛠️ Admin Dashboard — {sem}")
 
+    # Top KPI Metrics row
+    c_stats1, c_stats2, c_stats3 = st.columns(3)
+    subjects = get_subjects(sem_id)
+    reqs = get_pending_requests()
+    
+    with c_stats1:
+        render_kpi_card("Active Semester", sem, "📚", "linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.12))")
+    with c_stats2:
+        render_kpi_card("Subjects Registered", f"{len(subjects)} Course(s)", "➕", "linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(5, 150, 105, 0.12))")
+    with c_stats3:
+        render_kpi_card("Substitution Requests", f"{len(reqs)} Pending Action", "⚠️", "linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(217, 119, 6, 0.12))")
+
     tab1, tab2, tab3, tab4 = st.tabs(
-        ["➕ Subjects", "⚙️ Generate", "📅 View Timetable", "✅ Change Requests"]
+        ["➕ Add Subjects", "⚙️ Timetable Generator", "📅 Schedule Grid", "✅ Change Requests"]
     )
 
     # ── TAB 1: SUBJECTS ──
     with tab1:
-        st.subheader("Add Subject")
+        st.subheader("Register Subject Details")
         c1, c2 = st.columns(2)
         sub_name = c1.text_input("Subject Name")
         faculty  = c2.text_input("Faculty Name")
@@ -375,6 +689,7 @@ def render_admin():
         room     = c4.text_input("Room Number")
         type_    = c5.selectbox("Type", ["Theory", "Lab"])
 
+        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
         if st.button("Add Subject", use_container_width=True):
             if sub_name and faculty and room:
                 db.collection("semesters").document(sem_id)\
@@ -387,31 +702,41 @@ def render_admin():
             else:
                 st.warning("Fill all fields")
 
-        st.subheader("Current Subjects")
-        subjects = get_subjects(sem_id)
+        st.markdown("<hr style='margin: 20px 0;'>", unsafe_allow_html=True)
+        st.subheader("Current Registered Subjects")
         if not subjects:
             st.info("No subjects added yet for this semester.")
+        
         for doc_id, d in subjects:
-            cc = st.columns([3, 2, 1, 2, 1, 1])
-            cc[0].write(d.get("subject", ""))
-            cc[1].write(d.get("faculty", ""))
-            cc[2].write(f"{d.get('hours',0)}h")
-            cc[3].write(f"Rm {d.get('room','')}")
-            cc[4].write(d.get("type",""))
-            if cc[5].button("❌", key=f"del_{doc_id}"):
-                db.collection("semesters").document(sem_id)\
-                  .collection("subjects").document(doc_id).delete()
-                st.rerun()
+            c_card, c_del = st.columns([6, 1])
+            with c_card:
+                st.markdown(f"""
+                <div style="background: rgba(30, 41, 59, 0.35); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 14px 18px; border-left: 4px solid #818cf8; margin-bottom: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                    <div style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.05rem; color: #ffffff;">{d.get('subject','')} <span style="font-size: 0.72rem; background: rgba(99,102,241,0.2); color: #a5b4fc; padding: 3px 10px; border-radius: 12px; font-weight: 600; margin-left: 8px; text-transform: uppercase; letter-spacing: 0.5px;">{d.get('type','')}</span></div>
+                    <div style="font-size: 0.84rem; color: #94a3b8; margin-top: 4px; font-family: 'Inter', sans-serif;">👨‍🏫 {d.get('faculty','')} &nbsp;|&nbsp; 🕒 {d.get('hours',0)} hrs/week &nbsp;|&nbsp; 📍 Room {d.get('room','')}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with c_del:
+                st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+                if st.button("❌", key=f"del_{doc_id}", use_container_width=True):
+                    db.collection("semesters").document(sem_id)\
+                      .collection("subjects").document(doc_id).delete()
+                    st.rerun()
 
     # ── TAB 2: GENERATE ──
     with tab2:
-        st.subheader("Generate Timetable")
-        subjects = get_subjects(sem_id)
+        st.subheader("Generate Semester Timetable")
+        st.markdown("""
+        <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.15); border-radius: 10px; padding: 15px; margin-bottom: 20px; color: #a5b4fc; font-family: 'Inter', sans-serif; font-size: 0.88rem; line-height: 1.45;">
+            ℹ️ <strong>Auto-Allocation Engine:</strong> The system assigns laboratory sessions in continuous blocks and distributes theory classes evenly to resolve conflicts.
+        </div>
+        """, unsafe_allow_html=True)
+        
         if not subjects:
             st.warning("Add subjects first.")
         else:
-            st.write(f"Found **{len(subjects)}** subjects for {sem}.")
-            if st.button("🔄 Generate Timetable", use_container_width=True):
+            st.write(f"Found **{len(subjects)}** subjects registered for {sem}.")
+            if st.button("🔄 Generate conflict-free timetable", use_container_width=True):
                 subject_list = [d for _, d in subjects]
                 tt = generate_timetable(subject_list)
                 save_timetable(sem_id, tt)
@@ -424,35 +749,34 @@ def render_admin():
         if not tt:
             st.info("No timetable generated yet for this semester.")
         else:
-            df = pd.DataFrame(tt).T
-            df.index.name = "Day"
-            st.dataframe(df, use_container_width=True)
+            # Styled Custom Timetable View
+            st.markdown(get_custom_timetable_html(tt), unsafe_allow_html=True)
 
-            st.subheader("✏️ Edit a Cell")
-            e_day  = st.selectbox("Day",  DAYS,  key="e_day")
-            e_time = st.selectbox("Time", [t for t in TIMES if t not in ["BREAK","LUNCH"]], key="e_time")
+            st.markdown("<hr style='margin: 20px 0;'>", unsafe_allow_html=True)
+            st.subheader("✏️ Manual Cell Editor")
+            e_day  = st.selectbox("Select Target Day",  DAYS,  key="e_day")
+            e_time = st.selectbox("Select Time Slot", [t for t in TIMES if t not in ["BREAK","LUNCH"]], key="e_time")
             current_val = tt.get(e_day, {}).get(e_time, "")
-            new_val = st.text_input("New value", value=current_val, key="e_val")
-            if st.button("Save Change"):
+            new_val = st.text_input("Edit Cell Value", value=current_val, key="e_val")
+            if st.button("Save Manual Override", use_container_width=True):
                 tt[e_day][e_time] = new_val
                 save_timetable(sem_id, tt)
-                st.success("Saved!")
+                st.success("Saved override!")
                 st.rerun()
 
     # ── TAB 4: CHANGE REQUESTS ──
     with tab4:
-        st.subheader("Pending Change Requests")
-        reqs = get_pending_requests()
+        st.subheader("Pending Substitution Requests")
         if not reqs:
-            st.success("No pending requests.")
+            st.success("No pending change requests.")
         for req_id, req in reqs:
-            with st.expander(f"📌 {req['sem_id']} | {req['day']} {req['time_slot']} — {req['requested_by']}"):
+            with st.expander(f"📌 {req['sem_id'].upper().replace('_', ' ')} | {req['day']} {req['time_slot']} — Requested by {req['requested_by']}"):
                 st.write(f"**Reason:** {req['reason']}")
                 st.write(f"**Submitted:** {req['timestamp'][:16]}")
                 new_v = st.text_input("Replacement class (leave blank to free slot)",
                                       key=f"rv_{req_id}")
                 cc = st.columns(2)
-                if cc[0].button("✅ Approve", key=f"ap_{req_id}"):
+                if cc[0].button("✅ Approve Request", key=f"ap_{req_id}"):
                     approve_change(req_id, req["sem_id"],
                                    req["day"], req["time_slot"],
                                    new_v or "FREE")
@@ -466,16 +790,16 @@ def render_admin():
                                      "admin", "substitution")
                     st.success("Approved & notification sent!")
                     st.rerun()
-                if cc[1].button("❌ Reject", key=f"rj_{req_id}"):
+                if cc[1].button("❌ Reject Request", key=f"rj_{req_id}"):
                     reject_change(req_id)
                     st.rerun()
 
-        st.markdown("---")
+        st.markdown("<hr style='margin: 20px 0;'>", unsafe_allow_html=True)
         st.subheader("📣 Send Quick Announcement")
         ann_title = st.text_input("Title")
         ann_body  = st.text_area("Message")
-        ann_sem   = st.selectbox("Send to", ["All users"] + SEMESTERS, key="ann_sem")
-        if st.button("Send Notification", use_container_width=True):
+        ann_sem   = st.selectbox("Send to Audience", ["All users"] + SEMESTERS, key="ann_sem")
+        if st.button("Send Announcement Alert", use_container_width=True):
             if ann_title and ann_body:
                 topic = "all_users" if ann_sem == "All users" \
                         else ann_sem.replace(" ","_").lower() + "_students"
@@ -487,15 +811,20 @@ def render_admin():
             else:
                 st.warning("Fill title and message.")
 
-        st.markdown("---")
-        st.subheader("📜 Notification History")
+        st.markdown("<hr style='margin: 20px 0;'>", unsafe_allow_html=True)
+        st.subheader("📜 Notification History Logs")
         notifs = db.collection("notifications")\
                    .order_by("timestamp", direction=firestore.Query.DESCENDING)\
                    .limit(20).stream()
         for n in notifs:
             nd = n.to_dict()
-            st.write(f"**{nd['title']}** — {nd['body'][:60]}  "
-                     f"_({nd['type']}, {nd['timestamp'][:16]})_")
+            render_announcement_card(
+                nd.get("title", "Announcement"),
+                nd.get("body", ""),
+                nd.get("sender", "Admin"),
+                nd.get("timestamp", ""),
+                nd.get("type", "announcement")
+            )
 
 # ════════════════════════════════════════════
 #  UI — TEACHER DASHBOARD
@@ -507,7 +836,7 @@ def render_teacher():
     st.title(f"👩‍🏫 Teacher Dashboard — {sem}")
 
     tab1, tab2, tab3 = st.tabs(
-        ["📅 My Timetable", "🔄 Request Change", "📣 Quick Alert"]
+        ["📅 Schedule Overview", "🔄 Substitution Request", "📣 Quick Alert"]
     )
 
     with tab1:
@@ -515,33 +844,73 @@ def render_teacher():
         if not tt:
             st.info("No timetable available yet.")
         else:
-            df = pd.DataFrame(tt).T
-            st.dataframe(df, use_container_width=True)
+            st.markdown(get_custom_timetable_html(tt), unsafe_allow_html=True)
 
             # Today's schedule highlight
             today = datetime.datetime.now().strftime("%A")
-            if today in df.index:
-                st.subheader(f"📍 Today — {today}")
-                for t_slot in df.columns:
-                    val = df.loc[today, t_slot]
-                    if val and val not in ["☕ BREAK", "🍴 LUNCH"]:
-                        if st.session_state.user_name in val or \
-                           st.session_state.user_email.split("@")[0] in val:
-                            st.success(f"**{t_slot}** — {val}")
+            if today in tt:
+                st.markdown(f"<h3 style='margin-top: 20px;'>📍 Your Schedule Today — {today}</h3>", unsafe_allow_html=True)
+                has_classes = False
+                
+                # Sort TIMES
+                slot_times = []
+                for slot in TIMES:
+                    try:
+                        t_parsed = datetime.datetime.strptime(slot, "%H:%M").time()
+                        slot_times.append((t_parsed, slot))
+                    except ValueError:
+                        pass
+                slot_times.sort()
+                
+                for _, t_slot in slot_times:
+                    val = tt[today].get(t_slot, "")
+                    if val and val not in ["☕ BREAK", "🍴 LUNCH", "BREAK", "LUNCH"]:
+                        # Check if this teacher is teaching this class
+                        teacher_name = st.session_state.user_name.lower()
+                        teacher_email_prefix = st.session_state.user_email.split("@")[0].lower()
+                        val_lower = val.lower()
+                        
+                        if teacher_name in val_lower or teacher_email_prefix in val_lower:
+                            has_classes = True
+                            sub_name = val.split(" (")[0]
+                            fac_room = val.split(" (")[1].replace(")", "") if " (" in val else ""
+                            room = fac_room.split(", Rm ")[1] if ", Rm " in fac_room else ""
+                            
+                            st.markdown(f"""
+                            <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.12)); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 18px; margin-bottom: 12px; border-left: 5px solid #818cf8; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                                <div>
+                                    <div style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.1rem; color: #ffffff;">{sub_name}</div>
+                                    <div style="font-size: 0.85rem; color: #cbd5e1; margin-top: 4px; font-family: 'Inter', sans-serif;">📍 Room {room if room else '-'}</div>
+                                </div>
+                                <div style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 0.88rem; color: #e9d5ff; background: rgba(99,102,241,0.25); padding: 4px 14px; border-radius: 20px;">🕒 {t_slot}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                
+                if not has_classes:
+                    st.markdown("""
+                    <div style="background: rgba(30, 41, 59, 0.2); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 20px; text-align: center; color: #94a3b8; font-family: 'Inter', sans-serif;">
+                        🎉 No teaching hours scheduled for you today. Have a productive day!
+                    </div>
+                    """, unsafe_allow_html=True)
 
     with tab2:
         st.subheader("Request Timetable Change")
-        st.info("You can request a change for tomorrow's classes only.")
+        st.markdown("""
+        <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: 10px; padding: 15px; margin-bottom: 20px; color: #93c5fd; font-family: 'Inter', sans-serif; font-size: 0.88rem; line-height: 1.45;">
+            ℹ️ <strong>Substitution System:</strong> You can submit a change request for tomorrow's classes. Once approved by the administrator, students will receive an instant push notification and the schedule will update.
+        </div>
+        """, unsafe_allow_html=True)
+        
         tt = load_timetable(sem_id)
         if not tt:
             st.warning("No timetable loaded.")
         else:
-            tomorrow_idx = (DAYS.index(datetime.datetime.now().strftime("%A")) + 1) % 6
+            tomorrow_idx = (DAYS.index(datetime.datetime.now().strftime("%A")) + 1) % len(DAYS)
             tomorrow = DAYS[tomorrow_idx]
-            st.write(f"Requesting change for: **{tomorrow}**")
+            st.markdown(f"##### Target Day: **{tomorrow}**")
             avail_slots = [t for t in TIMES
                            if tt.get(tomorrow, {}).get(t, "") not in
-                           ["", "☕ BREAK", "🍴 LUNCH"]]
+                           ["", "☕ BREAK", "🍴 LUNCH", "BREAK", "LUNCH"]]
             if not avail_slots:
                 st.info("No classes scheduled for tomorrow.")
             else:
@@ -560,7 +929,12 @@ def render_teacher():
 
     with tab3:
         st.subheader("Send Quick Alert to Students")
-        st.warning("This sends a push notification to all students in this semester.")
+        st.markdown("""
+        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 10px; padding: 15px; margin-bottom: 20px; color: #fcd34d; font-family: 'Inter', sans-serif; font-size: 0.88rem; line-height: 1.45;">
+            ⚠️ <strong>Alert Broadcast:</strong> This will publish an announcement card to the student feed and trigger push notifications for all students in this semester.
+        </div>
+        """, unsafe_allow_html=True)
+        
         al_title = st.text_input("Alert title")
         al_body  = st.text_area("Message")
         if st.button("Send Alert", use_container_width=True):
@@ -581,76 +955,164 @@ def render_student():
     sem    = st.session_state.selected_sem
     sem_id = sem.replace(" ", "_").lower()
 
-    st.title(f"🎓 Student View — {sem}")
+    st.title(f"🎓 Student Dashboard — {sem}")
 
-    tab1, tab2 = st.tabs(["📅 Timetable", "🔔 Notifications"])
+    tab1, tab2 = st.tabs(["📅 Custom Timetable", "🔔 Recent Notifications"])
 
     with tab1:
         tt = load_timetable(sem_id)
         if not tt:
             st.info("Timetable not published yet for this semester.")
         else:
-            df = pd.DataFrame(tt).T
-            df.index.name = "Day"
-            st.dataframe(df, use_container_width=True)
+            # Render styled HTML timetable
+            st.markdown(get_custom_timetable_html(tt), unsafe_allow_html=True)
 
             # Today & next class
             now   = datetime.datetime.now()
             today = now.strftime("%A")
-            current_hm = now.strftime("%H:%M")
 
-            if today in df.index:
-                st.subheader(f"📍 Today — {today}")
+            if today in tt:
+                st.subheader(f"📍 Class Schedule — {today}")
+                
+                # Use our proper datetime parser helper
+                day_tt = tt[today]
+                
+                # Parse slot times
+                slot_times = []
+                for slot in TIMES:
+                    try:
+                        t_parsed = datetime.datetime.strptime(slot, "%H:%M").time()
+                        slot_times.append((t_parsed, slot))
+                    except ValueError:
+                        pass
+                slot_times.sort()
+                
                 current_class = None
-                next_class    = None
-
-                for t_slot in df.columns:
-                    val = df.loc[today, t_slot]
-                    if not val or val in ["☕ BREAK", "🍴 LUNCH"]:
+                next_class = None
+                
+                for idx, (t_parsed, slot) in enumerate(slot_times):
+                    val = day_tt.get(slot, "")
+                    if not val or val in ["☕ BREAK", "🍴 LUNCH", "BREAK", "LUNCH"]:
                         continue
-                    if t_slot <= current_hm:
-                        current_class = (t_slot, val)
-                    elif next_class is None:
-                        next_class = (t_slot, val)
-
-                if current_class:
-                    st.success(f"🟢 **Now ({current_class[0]}):** {current_class[1]}")
-                if next_class:
-                    st.info(f"⏭ **Next ({next_class[0]}):** {next_class[1]}")
-                if not current_class and not next_class:
-                    st.info("No more classes today.")
-
+                    
+                    # Assume class duration is 1 hour
+                    start_dt = datetime.datetime.combine(now.date(), t_parsed)
+                    end_dt = start_dt + datetime.timedelta(hours=1)
+                    
+                    if start_dt <= now < end_dt:
+                        current_class = (slot, val)
+                    elif start_dt > now and next_class is None:
+                        next_class = (slot, val)
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    if current_class:
+                        slot, val = current_class
+                        sub_name = val.split(" (")[0]
+                        fac_room = val.split(" (")[1].replace(")", "") if " (" in val else ""
+                        fac = fac_room.split(", Rm ")[0] if ", Rm " in fac_room else fac_room
+                        room = fac_room.split(", Rm ")[1] if ", Rm " in fac_room else ""
+                        
+                        st.markdown(f"""
+                        <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(5, 150, 105, 0.12)); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(16,185,129,0.15); border-left: 5px solid #10b981; height: 100%;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.9rem; color: #10b981; text-transform: uppercase; letter-spacing: 0.5px;">🟢 ACTIVE CLASS</span>
+                                <span style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; color: #a7f3d0; background: rgba(16,185,129,0.15); padding: 3px 10px; border-radius: 20px; font-weight: 600;">{slot}</span>
+                            </div>
+                            <h4 style="margin: 12px 0 6px 0; color: #ffffff; font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 700;">{sub_name}</h4>
+                            <div style="font-size: 0.88rem; color: #cbd5e1; font-family: 'Inter', sans-serif; margin-bottom: 2px;">👤 {fac}</div>
+                            {f'<div style="font-size: 0.88rem; color: #cbd5e1; font-family: \'Inter\', sans-serif;">📍 Room {room}</div>' if room else ''}
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.markdown("""
+                        <div style="background: rgba(30, 41, 59, 0.25); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 20px; text-align: center; color: #94a3b8; font-family: 'Inter', sans-serif; border-left: 5px solid rgba(255, 255, 255, 0.1); height: 100%; display: flex; align-items: center; justify-content: center; min-height: 120px;">
+                            <div>☕ No Active Lecture at this time</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                with col2:
+                    if next_class:
+                        slot, val = next_class
+                        sub_name = val.split(" (")[0]
+                        fac_room = val.split(" (")[1].replace(")", "") if " (" in val else ""
+                        fac = fac_room.split(", Rm ")[0] if ", Rm " in fac_room else fac_room
+                        room = fac_room.split(", Rm ")[1] if ", Rm " in fac_room else ""
+                        
+                        st.markdown(f"""
+                        <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.12)); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(99,102,241,0.15); border-left: 5px solid #6366f1; height: 100%;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.9rem; color: #a5b4fc; text-transform: uppercase; letter-spacing: 0.5px;">⏭ UP NEXT</span>
+                                <span style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; color: #e9d5ff; background: rgba(99,102,241,0.15); padding: 3px 10px; border-radius: 20px; font-weight: 600;">{slot}</span>
+                            </div>
+                            <h4 style="margin: 12px 0 6px 0; color: #ffffff; font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 700;">{sub_name}</h4>
+                            <div style="font-size: 0.88rem; color: #cbd5e1; font-family: 'Inter', sans-serif; margin-bottom: 2px;">👤 {fac}</div>
+                            {f'<div style="font-size: 0.88rem; color: #cbd5e1; font-family: \'Inter\', sans-serif;">📍 Room {room}</div>' if room else ''}
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.markdown("""
+                        <div style="background: rgba(30, 41, 59, 0.25); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 20px; text-align: center; color: #94a3b8; font-family: 'Inter', sans-serif; border-left: 5px solid rgba(255, 255, 255, 0.1); height: 100%; display: flex; align-items: center; justify-content: center; min-height: 120px;">
+                            <div>🎉 No more lectures scheduled today!</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+            
+            st.markdown("<hr style='margin: 20px 0;'>", unsafe_allow_html=True)
             st.subheader("📅 Exam Schedule")
             exams = db.collection("exams").where("sem_id", "==", sem_id).stream()
             exam_list = [e.to_dict() for e in exams]
             if exam_list:
-                st.dataframe(pd.DataFrame(exam_list), use_container_width=True)
+                # Custom render exam schedule as a list of styled cards
+                cols = st.columns(3)
+                for idx, exam in enumerate(exam_list):
+                    col_target = cols[idx % 3]
+                    with col_target:
+                        st.markdown(f"""
+                        <div style="background: rgba(30, 41, 59, 0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 15px; margin-bottom: 15px; border-top: 3px solid #f43f5e; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                            <div style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.05rem; color: #ffffff; margin-bottom: 8px;">📝 {exam.get('subject', 'Exam')}</div>
+                            <div style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 4px; font-family: 'Inter', sans-serif;">📅 <strong>Date:</strong> {exam.get('date', '-')}</div>
+                            <div style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 4px; font-family: 'Inter', sans-serif;">🕒 <strong>Time:</strong> {exam.get('time', '-')}</div>
+                            <div style="font-size: 0.85rem; color: #cbd5e1; font-family: 'Inter', sans-serif;">📍 <strong>Room:</strong> {exam.get('room', '-')}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
             else:
-                st.info("No exams scheduled yet.")
+                st.markdown("""
+                <div style="background: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 15px; text-align: center; color: #64748b; font-family: 'Inter', sans-serif;">
+                    No upcoming exams scheduled.
+                </div>
+                """, unsafe_allow_html=True)
 
     with tab2:
-        st.subheader("🔔 Recent Notifications")
+        st.subheader("Recent Notifications Feed")
         notifs = db.collection("notifications")\
                    .order_by("timestamp", direction=firestore.Query.DESCENDING)\
                    .limit(15).stream()
         found = False
+        
         for n in notifs:
             found = True
             nd = n.to_dict()
-            icon = {"announcement":"📢","substitution":"🔄",
-                    "teacher_alert":"⚠️"}.get(nd["type"], "🔔")
-            st.markdown(
-                f"{icon} **{nd['title']}** — {nd['body']}  \n"
-                f"_Sent by {nd['sender']} at {nd['timestamp'][:16]}_"
+            render_announcement_card(
+                nd.get("title", "Notification"),
+                nd.get("body", ""),
+                nd.get("sender", "Admin"),
+                nd.get("timestamp", ""),
+                nd.get("type", "announcement")
             )
-            st.markdown("---")
+            
         if not found:
-            st.info("No notifications yet.")
+            st.markdown("""
+            <div style="background: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 20px; text-align: center; color: #64748b; font-family: 'Inter', sans-serif;">
+                🔔 No notifications yet. You're all caught up!
+            </div>
+            """, unsafe_allow_html=True)
 
 # ════════════════════════════════════════════
 #  MAIN ROUTER
 # ════════════════════════════════════════════
 def main():
+    inject_custom_css()
     if not st.session_state.logged_in:
         render_login()
         return
