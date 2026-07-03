@@ -9,7 +9,12 @@ import json
 import requests
 import threading
 import time
-from dotenv import load_dotenv
+
+try:
+    from dotenv import load_dotenv
+except ModuleNotFoundError:
+    def load_dotenv():
+        return None
 
 # Load env variables from .env if present
 load_dotenv()
