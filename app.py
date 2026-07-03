@@ -31,6 +31,29 @@ if not firebase_admin._apps:
 
 db = firestore.client()
 
+
+
+
+import streamlit as st
+
+st.set_page_config(
+    page_title="Smart Timetable App",
+    page_icon="📅",
+    layout="wide"
+)
+
+# Optional: hide default Streamlit header/footer
+hide_streamlit_style = """
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+</style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
+
+
 # ════════════════════════════════════════════
 #  PAGE CONFIG & CUSTOM STYLING
 # ════════════════════════════════════════════
@@ -41,95 +64,99 @@ st.set_page_config(
 )
 
 def inject_custom_css():
-    st.markdown("""
+    # Use your GitHub background.jpg as full-page background
+    bg_url = "https://github.com/khushii-012/Smart-Timetable-App/raw/main/background.jpg"
+
+    st.markdown(f"""
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        /* Global styling and gradients */
-        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
-            background-color: #0b0f19 !important;
-            background-image: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 45%),
-                              radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.12) 0%, transparent 45%) !important;
+        /* Global styling with image + gradients */
+        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{
+            background-image:
+                linear-gradient(135deg, rgba(60, 90, 200, 0.35), rgba(240, 98, 146, 0.35)),
+                url("{bg_url}");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
             color: #f1f5f9 !important;
             font-family: 'Inter', sans-serif !important;
-        }
-        
+        }}
+
         /* Custom typography */
-        h1, h2, h3, h4, h5, h6 {
+        h1, h2, h3, h4, h5, h6 {{
             font-family: 'Outfit', sans-serif !important;
             font-weight: 700 !important;
             color: #ffffff !important;
             letter-spacing: -0.5px;
-        }
-        
+        }}
+
         /* Modern Title Styling */
-        h1 {
+        h1 {{
             background: linear-gradient(135deg, #a5b4fc, #e9d5ff) !important;
             -webkit-background-clip: text !important;
             -webkit-text-fill-color: transparent !important;
             font-size: 2.2rem !important;
             font-weight: 800 !important;
             margin-bottom: 0.5rem !important;
-        }
-        
+        }}
+
         /* Sidebar layout & glassmorphism */
-        [data-testid="stSidebar"] {
-            background-color: rgba(15, 23, 42, 0.95) !important;
-            backdrop-filter: blur(12px) !important;
-            border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
-        }
-        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+        [data-testid="stSidebar"] {{
+            background-color: rgba(15, 23, 42, 0.92) !important;
+            backdrop-filter: blur(16px) !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.10) !important;
+        }}
+        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {{
             color: #cbd5e1 !important;
-        }
-        
+        }}
+
         /* Styled Input Controls */
-        div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"] {
-            background-color: rgba(30, 41, 59, 0.6) !important;
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"] {{
+            background-color: rgba(15, 23, 42, 0.8) !important;
+            border: 1px solid rgba(148, 163, 184, 0.4) !important;
             border-radius: 10px !important;
             transition: all 0.3s ease !important;
             color: #ffffff !important;
-        }
-        div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within, div[data-baseweb="textarea"]:focus-within {
+        }}
+        div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within, div[data-baseweb="textarea"]:focus-within {{
             border-color: #818cf8 !important;
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
-        }
-        
-        /* Selectboxes text compatibility */
-        div[data-baseweb="select"] span {
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4) !important;
+        }}
+        div[data-baseweb="select"] span {{
             color: #ffffff !important;
-        }
-        
-        /* Streamlit standard Tabs styling */
-        div[data-testid="stTabBar"] {
-            background-color: rgba(15, 23, 42, 0.5) !important;
-            border-radius: 10px !important;
-            padding: 5px !important;
-            border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        }}
+
+        /* Streamlit Tabs styling */
+        div[data-testid="stTabBar"] {{
+            background-color: rgba(15, 23, 42, 0.75) !important;
+            border-radius: 12px !important;
+            padding: 6px !important;
+            border: 1px solid rgba(148, 163, 184, 0.5) !important;
             gap: 6px !important;
-        }
-        button[data-baseweb="tab"] {
-            border-radius: 8px !important;
+        }}
+        button[data-baseweb="tab"] {{
+            border-radius: 999px !important;
             color: #94a3b8 !important;
             font-family: 'Outfit', sans-serif !important;
             font-weight: 600 !important;
             background-color: transparent !important;
             transition: all 0.2s ease !important;
             border-bottom: none !important;
-            padding: 8px 16px !important;
-        }
-        button[data-baseweb="tab"]:hover {
+            padding: 8px 18px !important;
+        }}
+        button[data-baseweb="tab"]:hover {{
             color: #cbd5e1 !important;
-            background-color: rgba(255, 255, 255, 0.03) !important;
-        }
-        button[data-baseweb="tab"][aria-selected="true"] {
-            background-color: rgba(99, 102, 241, 0.18) !important;
+            background-color: rgba(255, 255, 255, 0.05) !important;
+        }}
+        button[data-baseweb="tab"][aria-selected="true"] {{
+            background: linear-gradient(135deg, #6366f1, #a855f7) !important;
             color: #ffffff !important;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
-            border: 1px solid rgba(99, 102, 241, 0.25) !important;
-        }
-        
+            box-shadow: 0 4px 16px rgba(79, 70, 229, 0.45) !important;
+            border: 1px solid rgba(129, 140, 248, 0.7) !important;
+        }}
+
         /* Action buttons styles */
-        div.stButton > button {
+        div.stButton > button {{
             background: linear-gradient(135deg, #6366f1, #a855f7) !important;
             color: white !important;
             border: none !important;
@@ -137,49 +164,48 @@ def inject_custom_css():
             padding: 10px 24px !important;
             font-family: 'Outfit', sans-serif !important;
             font-weight: 600 !important;
-            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25) !important;
-            transition: all 0.3s ease !important;
+            box-shadow: 0 6px 18px rgba(79, 70, 229, 0.45) !important;
+            transition: all 0.25s ease !important;
             width: 100% !important;
-        }
-        div.stButton > button:hover {
+        }}
+        div.stButton > button:hover {{
             background: linear-gradient(135deg, #4f46e5, #9333ea) !important;
-            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45) !important;
-            transform: translateY(-2px) !important;
-            color: white !important;
-        }
-        div.stButton > button:active {
+            transform: translateY(-1.5px) !important;
+        }}
+        div.stButton > button:active {{
             transform: translateY(0) !important;
-        }
-        
-        /* Divider overrides */
-        hr {
-            border-color: rgba(255, 255, 255, 0.08) !important;
-            margin: 1.5rem 0 !important;
-        }
-        
-        /* Styled Alert/Notification boxes */
-        div[data-testid="stNotification"] {
-            background-color: rgba(30, 41, 59, 0.5) !important;
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
-            border-radius: 10px !important;
-            color: #e2e8f0 !important;
-        }
-        
-        /* Custom card wrapper for Streamlit layout */
-        .glass-card {
-            background: rgba(30, 41, 59, 0.35);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 12px;
-            padding: 20px;
+            box-shadow: 0 3px 12px rgba(79, 70, 229, 0.35) !important;
+        }}
+
+        /* Glass card wrapper for sections */
+        .glass-card {{
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            border-radius: 18px;
+            padding: 20px 24px;
             margin-bottom: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(8px);
-        }
-        
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(16px);
+        }}
+
+        /* Divider overrides */
+        hr {{
+            border-color: rgba(148, 163, 184, 0.5) !important;
+            margin: 1.5rem 0 !important;
+        }}
+
+        /* Styled Alert/Notification boxes */
+        div[data-testid="stNotification"] {{
+            background-color: rgba(15, 23, 42, 0.9) !important;
+            border: 1px solid rgba(148, 163, 184, 0.5) !important;
+            border-radius: 12px !important;
+            color: #e2e8f0 !important;
+        }}
+
         /* Hide native decoration and bars */
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        header {visibility: hidden;}
+        #MainMenu {{visibility: hidden;}}
+        footer {{visibility: hidden;}}
+        header {{visibility: hidden;}}
     </style>
     """, unsafe_allow_html=True)
 
