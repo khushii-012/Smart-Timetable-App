@@ -65,7 +65,7 @@ st.set_page_config(
 
 def inject_custom_css():
     # Use your GitHub background.jpg as full-page background
-    bg_url = "https://github.com/khushii-012/Smart-Timetable-App/raw/main/https://pin.it/VbGoNArk4"
+    bg_url = "https://github.com/khushii-012/Smart-Timetable-App/raw/main/timetable bg.png"
 
     st.markdown(f"""
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
