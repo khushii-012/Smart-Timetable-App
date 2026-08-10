@@ -333,6 +333,10 @@ def get_custom_timetable_html(tt):
         html += "</tr>"
         
     html += "</tbody></table></div>"
+    # Strip leading whitespace from every line — Markdown treats 4+ leading
+    # spaces as a code block, which was causing the raw HTML to be displayed
+    # as literal text instead of being rendered.
+    html = "\n".join(line.lstrip() for line in html.split("\n"))
     return html
 
 
