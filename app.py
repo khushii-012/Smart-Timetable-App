@@ -32,12 +32,11 @@ if not firebase_admin._apps:
 db = firestore.client()
 
 
-
-
-import streamlit as st
-
+# ════════════════════════════════════════════
+#  PAGE CONFIG & CUSTOM STYLING
+# ════════════════════════════════════════════
 st.set_page_config(
-    page_title="Smart Timetable App",
+    page_title="Smart Timetable",
     page_icon="📅",
     layout="wide"
 )
@@ -52,17 +51,6 @@ header {visibility: hidden;}
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-
-
-# ════════════════════════════════════════════
-#  PAGE CONFIG & CUSTOM STYLING
-# ════════════════════════════════════════════
-st.set_page_config(
-    page_title="Smart Timetable",
-    page_icon="📅",
-    layout="wide"
-)
-
 def inject_custom_css():
     # Use your GitHub background.jpg as full-page background
     bg_url = "https://i.pinimg.com/736x/57/b0/e8/57b0e8a46cdbfe6383a4cba764c6c878.jpg"
@@ -73,7 +61,7 @@ def inject_custom_css():
         /* Global styling with image + gradients */
         html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{
             background-image:
-                linear-gradient(135deg, rgba(60, 90, 200, 0.35), rgba(240, 98, 146, 0.35)),
+                linear-gradient(135deg, rgba(10, 12, 30, 0.82), rgba(15, 10, 35, 0.82)),
                 url("{bg_url}");
             background-size: cover;
             background-position: center;
